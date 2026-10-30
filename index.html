@@ -22,7 +22,7 @@ h1 span{display:inline-block;animation:wave 2.2s ease-in-out infinite;animation-
 h1 span.y{animation-name:stretch}
 @keyframes wave{50%{transform:translateY(-14px) rotate(-4deg)}}
 @keyframes stretch{50%{transform:translateY(-10px) scaleY(1.35) scaleX(.9)}}
-.tiles{display:flex;gap:clamp(12px,3vw,28px)}
+.tiles{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(12px,3vw,28px);width:min(92vw,720px)}
 .tile{position:relative;width:clamp(76px,22vw,130px);aspect-ratio:1;border:0;border-radius:32%;font-size:clamp(34px,10vw,58px);background:var(--card);backdrop-filter:blur(10px);box-shadow:0 12px 30px var(--sh),inset 0 0 0 2px rgba(255,255,255,.6);cursor:pointer;transition:transform .25s cubic-bezier(.3,1.6,.5,1);animation:bob 3s ease-in-out infinite;animation-delay:calc(var(--i)*.4s)}
 @keyframes bob{50%{transform:translateY(-10px) rotate(3deg)}}
 .tile:hover{transform:scale(1.15) rotate(-6deg)}
@@ -62,6 +62,16 @@ canvas{width:min(86vw,320px);aspect-ratio:1;border-radius:24px;background:rgba(2
 #fin .big{font-size:clamp(70px,22vw,180px);animation:beat 1s infinite}
 @keyframes beat{15%{transform:scale(1.25)}30%{transform:scale(1)}45%{transform:scale(1.15)}}
 #re{border:0;border-radius:50%;width:60px;height:60px;font-size:28px;background:var(--card);cursor:pointer;box-shadow:0 8px 20px var(--sh)}
+.playfield{position:relative;width:min(86vw,340px);height:min(68vh,390px);min-height:260px;overflow:hidden;border-radius:24px;background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.9),rgba(255,210,230,.48));box-shadow:inset 0 0 0 2px rgba(255,79,147,.35);touch-action:manipulation}
+.orb{position:absolute;border:0;border-radius:50%;cursor:pointer;display:grid;place-items:center;box-shadow:0 7px 18px rgba(255,79,147,.28);animation:orbfloat 2.2s ease-in-out infinite alternate;transition:transform .18s}
+@keyframes orbfloat{to{transform:translateY(-12px) rotate(18deg)}}
+.star-dot{position:absolute;width:35px;height:35px;border:2px solid white;border-radius:50%;background:radial-gradient(circle,#fff 0 15%,#ff8fbd 40%,#ff4f93 75%);box-shadow:0 0 18px #ff4f93;transform:translate(-50%,-50%);cursor:pointer}
+.star-dot.hit{background:#fff;box-shadow:0 0 24px #fff,0 0 35px #ff4f93;pointer-events:none}
+.garden{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:min(86vw,330px)}
+.garden button{aspect-ratio:1;border:0;border-radius:24px;background:rgba(255,255,255,.55);font-size:clamp(34px,10vw,54px);box-shadow:0 7px 16px var(--sh);cursor:pointer;transition:transform .25s}
+.garden button:active{transform:scale(.86)}
+.garden button.bloom{animation:bloom .55s cubic-bezier(.2,1.8,.4,1);background:rgba(255,255,255,.9)}
+@keyframes bloom{50%{transform:scale(1.18) rotate(12deg)}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important}#bg{display:none}}
 </style>
 </head>
@@ -73,6 +83,10 @@ canvas{width:min(86vw,320px);aspect-ratio:1;border-radius:24px;background:rgba(2
     <button class="tile" data-g="m" style="--i:0" aria-label="память">🧸</button>
     <button class="tile" data-g="s" style="--i:1" aria-label="змейка">💗</button>
     <button class="tile" data-g="r" style="--i:2" aria-label="ритм">🎯</button>
+    <button class="tile" data-g="c" style="--i:3" aria-label="созвездие">🌌</button>
+    <button class="tile" data-g="b" style="--i:4" aria-label="пузырьки">🫧</button>
+    <button class="tile" data-g="o" style="--i:5" aria-label="орбита">🪐</button>
+    <button class="tile" data-g="f" style="--i:6" aria-label="сад цветов">🌷</button>
   </div>
 </main>
 <div id="ov"><div id="box"></div></div>
@@ -163,6 +177,85 @@ G.r=function(box,w){
   raf=requestAnimationFrame(L);
   return function(){cancelAnimationFrame(raf);document.removeEventListener('keydown',key)}
 };
+
+/* созвездие: соединить мерцающие звёзды по порядку */
+G.c=function(box,w){
+  var h=document.createElement('div');h.className='hud';box.appendChild(h);
+  var field=document.createElement('div');field.className='playfield';box.appendChild(field);
+  var pts=[[18,22],[48,13],[78,25],[27,49],[62,48],[43,78],[83,76]],n=0,lines=[];
+  h.textContent='✨ 0 / '+pts.length;
+  var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');
+  svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none';
+  field.appendChild(svg);
+  pts.forEach(function(p,i){
+    var d=document.createElement('button');d.className='star-dot';d.style.left=p[0]+'%';d.style.top=p[1]+'%';d.setAttribute('aria-label','звезда '+(i+1));
+    d.onclick=function(){
+      if(i!==n){d.animate([{transform:'translate(-50%,-50%) scale(1)'},{transform:'translate(-50%,-50%) scale(.7)'},{transform:'translate(-50%,-50%) scale(1)'}],250);return}
+      d.classList.add('hit');n++;h.textContent='✨ '+n+' / '+pts.length;
+      if(n>1){var prev=pts[n-2],line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('x1',prev[0]);line.setAttribute('y1',prev[1]);line.setAttribute('x2',p[0]);line.setAttribute('y2',p[1]);line.setAttribute('stroke','#ff4f93');line.setAttribute('stroke-width','1.4');line.setAttribute('stroke-linecap','round');svg.appendChild(line)}
+      if(n===pts.length)w();
+    };field.appendChild(d);
+  });
+  return function(){};
+};
+/* лопни все пузырьки до того, как они улетят */
+G.b=function(box,w){
+  var h=document.createElement('div');h.className='hud';box.appendChild(h);
+  var field=document.createElement('div');field.className='playfield';box.appendChild(field);
+  var score=0,goal=18,live=true,items=[],raf,last=performance.now();
+  function hud(){h.textContent='🫧 '+score+' / '+goal}hud();
+  function spawn(){
+    var b=document.createElement('button');b.className='orb';b.textContent=['💗','🌸','✨','🍓','🦋'][Math.floor(Math.random()*5)];
+    var size=34+Math.random()*28,x=4+Math.random()*82,y=105;
+    b.style.width=size+'px';b.style.height=size+'px';b.style.left=x+'%';b.style.top=y+'%';b.style.fontSize=(size*.58)+'px';
+    var item={el:b,x:x,y:y,v:.22+Math.random()*.2};items.push(item);
+    b.onclick=function(){if(!live)return;score++;hud();b.animate([{transform:'scale(1)',opacity:1},{transform:'scale(1.8)',opacity:0}],180);setTimeout(function(){b.remove()},170);item.dead=true;if(score>=goal){live=false;w()}};
+    field.appendChild(b);
+  }
+  for(var i=0;i<7;i++)spawn();
+  function loop(t){if(!live)return;var dt=Math.min((t-last)/16,2);last=t;
+    items.forEach(function(it){if(it.dead)return;it.y-=it.v*dt;it.el.style.top=it.y+'%';if(it.y< -15){it.dead=true;it.el.remove();score=Math.max(0,score-1);hud()}});
+    items=items.filter(function(it){return !it.dead});
+    while(items.length<7)spawn();
+    raf=requestAnimationFrame(loop);
+  }
+  raf=requestAnimationFrame(loop);
+  return function(){live=false;cancelAnimationFrame(raf)};
+};
+/* орбита: уворачивайся от метеоров */
+G.o=function(box,w){
+  var h=document.createElement('div');h.className='hud';box.appendChild(h);
+  var cv=document.createElement('canvas');cv.width=320;cv.height=320;box.appendChild(cv);
+  var x=cv.getContext('2d'),angle=-Math.PI/2,rocks=[],t0=performance.now(),last=t0,alive=true,score=0,raf;
+  function move(e){var r=cv.getBoundingClientRect(),px=(e.clientX-r.left)/r.width-.5,py=(e.clientY-r.top)/r.height-.5;angle=Math.atan2(py,px)}
+  cv.addEventListener('pointermove',move);
+  cv.addEventListener('pointerdown',move);
+  function loop(t){if(!alive)return;var dt=Math.min((t-last)/1000,.05);last=t;score+=dt;
+    if(Math.random()<.035)rocks.push({a:Math.random()*Math.PI*2,r:155,s:65+Math.random()*45,z:5+Math.random()*5});
+    rocks.forEach(function(q){q.r-=q.s*dt});
+    rocks=rocks.filter(function(q){return q.r>12});
+    var px=160+Math.cos(angle)*72,py=160+Math.sin(angle)*72;
+    if(rocks.some(function(q){var rx=160+Math.cos(q.a)*q.r,ry=160+Math.sin(q.a)*q.r;return Math.hypot(rx-px,ry-py)<q.z+12})){alive=false;h.textContent='💫 '+Math.floor(score)+' сек';setTimeout(w,350);return}
+    x.clearRect(0,0,320,320);x.strokeStyle='rgba(255,79,147,.35)';x.lineWidth=2;x.beginPath();x.arc(160,160,72,0,7);x.stroke();
+    x.fillStyle='#ff8fbd';x.beginPath();x.arc(160,160,17,0,7);x.fill();x.font='24px serif';x.textAlign='center';x.textBaseline='middle';x.fillText('🪐',160,160);
+    rocks.forEach(function(q){x.font=(q.z*2.5)+'px serif';x.fillText('☄️',160+Math.cos(q.a)*q.r,160+Math.sin(q.a)*q.r)});
+    x.font='25px serif';x.fillText('🧸',px,py);h.textContent='⏱ '+Math.floor(score)+' сек';
+    if(score>=25){alive=false;w();return}raf=requestAnimationFrame(loop);
+  }
+  raf=requestAnimationFrame(loop);
+  return function(){alive=false;cancelAnimationFrame(raf);cv.removeEventListener('pointermove',move);cv.removeEventListener('pointerdown',move)};
+};
+/* волшебный сад: раскрой все бутоны */
+G.f=function(box,w){
+  var h=document.createElement('div');h.className='hud';box.appendChild(h);
+  var g=document.createElement('div');g.className='garden';box.appendChild(g);
+  var icons=['🌱','🌷','🌼','🌹','🌻','🌸','🪻','💐','🌺'],opened=0,order=icons.slice().sort(function(){return Math.random()-.5});
+  h.textContent='🌿 0 / 9';
+  order.forEach(function(e,i){var b=document.createElement('button');b.textContent='❔';b.setAttribute('aria-label','бутон '+(i+1));b.onclick=function(){if(b.classList.contains('bloom'))return;b.classList.add('bloom');b.textContent=e;opened++;h.textContent='🌿 '+opened+' / 9';if(opened===9){conf(35);w()}};g.appendChild(b)});
+  return function(){};
+};
+
 })();
 </script>
 </body>
