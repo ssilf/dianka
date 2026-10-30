@@ -87,6 +87,17 @@ canvas{width:min(86vw,320px);aspect-ratio:1;border-radius:24px;background:rgba(2
     <button class="tile" data-g="b" style="--i:4" aria-label="пузырьки">🫧</button>
     <button class="tile" data-g="o" style="--i:5" aria-label="орбита">🪐</button>
     <button class="tile" data-g="f" style="--i:6" aria-label="сад цветов">🌷</button>
+    <button class="tile" data-g="p" style="--i:7" aria-label="ловец звёзд">🌠</button>
+    <button class="tile" data-g="v" style="--i:8" aria-label="цветовой код">🎨</button>
+    <button class="tile" data-g="l" style="--i:9" aria-label="лабиринт">🌀</button>
+    <button class="tile" data-g="q" style="--i:10" aria-label="реакция">⚡</button>
+    <button class="tile" data-g="a" style="--i:11" aria-label="ритм сердец">💓</button>
+    <button class="tile" data-g="z" style="--i:12" aria-label="поймай котика">🐈</button>
+    <button class="tile" data-g="t" style="--i:13" aria-label="мозаика">🧩</button>
+    <button class="tile" data-g="d" style="--i:14" aria-label="рисунок">🖌️</button>
+    <button class="tile" data-g="h" style="--i:15" aria-label="луна">🌙</button>
+    <button class="tile" data-g="e" style="--i:16" aria-label="лазер">🔮</button>
+    <button class="tile" data-g="u" style="--i:17" aria-label="символы">🔐</button>
   </div>
 </main>
 <div id="ov"><div id="box"></div></div>
@@ -103,11 +114,11 @@ word($('#w'));word($('#w2'));
 function conf(n){for(var i=0;i<(n||40);i++){var c=document.createElement('div');c.className='conf';c.textContent=E[i%E.length];c.style.left=Math.random()*100+'vw';c.style.fontSize=(20+Math.random()*30)+'px';c.style.animationDuration=(2.5+Math.random()*2.5)+'s';c.style.animationDelay=Math.random()*1.2+'s';document.body.appendChild(c);setTimeout(function(x){x.remove()},7000,c)}}
 $('#w').onclick=function(){conf(18)};
 
-var done={m:0,s:0,r:0},stop=null,ov=$('#ov'),box=$('#box');
+var done={m:0,s:0,r:0,c:0,b:0,o:0,f:0,p:0,v:0,l:0,q:0,a:0,z:0,t:0,d:0,h:0,e:0,u:0},stop=null,ov=$('#ov'),box=$('#box');
 function open(k){box.innerHTML='<button id="x" aria-label="закрыть">✕</button>';$('#x').onclick=close;ov.classList.add('on');stop=G[k](box,function(){win(k)})}
 function close(){if(stop)stop();stop=null;ov.classList.remove('on')}
 function win(k){if(stop)stop();stop=null;done[k]=1;box.insertAdjacentHTML('beforeend','<div class="won">🫂</div>');conf(50);
-  setTimeout(function(){close();document.querySelector('[data-g='+k+']').classList.add('ok');if(done.m&&done.s&&done.r){$('#fin').classList.add('on');conf(120);setInterval(function(){conf(8)},1500)}},1400)}
+  setTimeout(function(){close();document.querySelector('[data-g='+k+']').classList.add('ok');if(Object.keys(done).every(function(key){return done[key]})){$('#fin').classList.add('on');conf(120);setInterval(function(){conf(8)},1500)}},1400)}
 document.querySelectorAll('.tile').forEach(function(t){t.onclick=function(){open(t.dataset.g)}});
 $('#re').onclick=function(){location.reload()};
 
@@ -253,6 +264,190 @@ G.f=function(box,w){
   var icons=['🌱','🌷','🌼','🌹','🌻','🌸','🪻','💐','🌺'],opened=0,order=icons.slice().sort(function(){return Math.random()-.5});
   h.textContent='🌿 0 / 9';
   order.forEach(function(e,i){var b=document.createElement('button');b.textContent='❔';b.setAttribute('aria-label','бутон '+(i+1));b.onclick=function(){if(b.classList.contains('bloom'))return;b.classList.add('bloom');b.textContent=e;opened++;h.textContent='🌿 '+opened+' / 9';if(opened===9){conf(35);w()}};g.appendChild(b)});
+  return function(){};
+};
+
+
+/* падающие звёзды: поймай нужное количество */
+G.p=function(box,w){
+  var h=document.createElement('div');h.className='hud';box.appendChild(h);
+  var f=document.createElement('div');f.className='playfield';box.appendChild(f);
+  var score=0,goal=15,items=[],live=true,raf,last=performance.now();
+  h.textContent='🌠 0 / '+goal;
+  function spawn(){var b=document.createElement('button');b.className='orb';b.textContent=Math.random()<.72?'⭐':'💔';b.style.left=(Math.random()*84+4)+'%';b.style.top='-45px';b.style.width='46px';b.style.height='46px';b.style.fontSize='27px';var it={el:b,y:-45,v:1.8+Math.random()*2,bad:b.textContent==='💔'};items.push(it);b.onclick=function(){if(!live||it.dead)return;it.dead=true;b.remove();if(it.bad){score=Math.max(0,score-2)}else score++;h.textContent='🌠 '+score+' / '+goal;if(score>=goal){live=false;w()}};f.appendChild(b)}
+  for(var i=0;i<5;i++)spawn();
+  function loop(t){if(!live)return;var dt=Math.min((t-last)/16,2);last=t;items.forEach(function(it){if(it.dead)return;it.y+=it.v*dt;it.el.style.top=it.y+'px';if(it.y>f.clientHeight){it.dead=true;it.el.remove()}});items=items.filter(function(it){return !it.dead});while(items.length<5)spawn();raf=requestAnimationFrame(loop)}
+  raf=requestAnimationFrame(loop);return function(){live=false;cancelAnimationFrame(raf)};
+};
+/* цветовой код: повтори последовательность */
+G.v=function(box,w){
+  var h=document.createElement('div');h.className='hud';box.appendChild(h);
+  var msg=document.createElement('div');msg.style.cssText='font-size:15px;text-align:center';msg.textContent='Запомни вспышки';box.appendChild(msg);
+  var g=document.createElement('div');g.className='garden';box.appendChild(g);
+  var colors=[['🌸','#ff70a6'],['💜','#a78bfa'],['💛','#facc15'],['💚','#4ade80']],seq=[],input=[],busy=true,level=0,buttons=[];
+  colors.forEach(function(c,i){var b=document.createElement('button');b.textContent=c[0];b.style.background=c[1];b.onclick=function(){if(busy)return;input.push(i);b.animate([{transform:'scale(1)'},{transform:'scale(.8)'},{transform:'scale(1)'}],180);if(input[input.length-1]!==seq[input.length-1]){msg.textContent='Попробуй ещё раз';input=[];show();return}if(input.length===seq.length){if(level>=5){w();return}level++;h.textContent='Уровень '+level+' / 6';input=[];seq.push(Math.floor(Math.random()*4));show()}};buttons.push(b);g.appendChild(b)});
+  function show(){busy=true;msg.textContent='Смотри';var i=0;function next(){buttons.forEach(function(b){b.style.filter='brightness(1)'});if(i>=seq.length){busy=false;msg.textContent='Повтори последовательность';return}var b=buttons[seq[i++]];b.style.filter='brightness(1.5)';setTimeout(next,520)}setTimeout(next,350)}
+  seq.push(Math.floor(Math.random()*4));h.textContent='Уровень 1 / 6';show();return function(){};
+};
+/* лабиринт: найди выход */
+G.l=function(box,w){
+  var h=document.createElement('div');h.className='hud';h.textContent='🌀';box.appendChild(h);
+  var cv=document.createElement('canvas');cv.width=300;cv.height=300;box.appendChild(cv);var x=cv.getContext('2d');
+  var map=['1111111111','1000000001','1011101101','1000100001','1110101101','1000000101','1011100101','1000000001','1011111101','1111111101'];
+  var px=1,py=1,goal=[8,8],cell=30,steps=0;
+  var pad=document.createElement('div');pad.className='pad';pad.innerHTML='<span></span><button data-m="0,-1">▲</button><span></span><button data-m="-1,0">◀</button><button data-m="0,1">▼</button><button data-m="1,0">▶</button>';box.appendChild(pad);
+  function draw(){x.clearRect(0,0,300,300);for(var y=0;y<10;y++)for(var z=0;z<10;z++){x.fillStyle=map[y][z]==='1'?'#ff9ac1':'rgba(255,255,255,.8)';x.fillRect(z*cell,y*cell,cell-2,cell-2)}x.font='22px serif';x.textAlign='center';x.fillText('💖',goal[0]*cell+14,goal[1]*cell+23);x.fillText('🧸',px*cell+14,py*cell+23);h.textContent='Шаги: '+steps}
+  function move(dx,dy){var nx=px+dx,ny=py+dy;if(map[ny]&&map[ny][nx]==='0'){px=nx;py=ny;steps++;draw();if(px===goal[0]&&py===goal[1])w()}}
+  pad.querySelectorAll('button').forEach(function(b){b.onclick=function(){var a=b.dataset.m.split(',').map(Number);move(a[0],a[1])}});
+  function key(e){var m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];if(m){e.preventDefault();move(m[0],m[1])}}document.addEventListener('keydown',key);draw();
+  return function(){document.removeEventListener('keydown',key)};
+};
+/* молниеносная реакция: нажми, когда экран станет розовым */
+G.q=function(box,w){
+  var h=document.createElement('div');h.className='hud';box.appendChild(h);
+  var b=document.createElement('button');b.style.cssText='width:min(78vw,280px);height:220px;border:0;border-radius:30px;background:#aaa;color:white;font-size:35px;box-shadow:0 10px 30px var(--sh);cursor:pointer';b.textContent='ЖДИ…';box.appendChild(b);
+  var state=0,timer=null,started=0,tries=0,best=9999,live=true,round=0;
+  function arm(){
+    if(!live)return;round++;state=0;b.style.background='#aaa';b.textContent='ЖДИ…';h.textContent='Попытка '+round+' / 5';
+    timer=setTimeout(function(){if(!live)return;state=1;started=performance.now();b.style.background='linear-gradient(135deg,#ff4f93,#ffb6d5)';b.textContent='ЖМИ!'},1100+Math.random()*1800);
+  }
+  b.onclick=function(){
+    if(!live)return;
+    if(state===0){
+      clearTimeout(timer);state=2;b.textContent='РАНО!';b.style.background='#999';
+      if(round>=5){live=false;h.textContent='Попробуй ещё раз';b.textContent='🔁';b.onclick=function(){}}else setTimeout(arm,800);
+      return;
+    }
+    if(state!==1)return;
+    state=2;var ms=Math.round(performance.now()-started);best=Math.min(best,ms);tries++;
+    if(tries>=5){live=false;h.textContent='⚡ Лучшее: '+best+' мс';b.textContent='✨';setTimeout(w,500)}
+    else{h.textContent=ms+' мс';setTimeout(arm,650)}
+  };
+  arm();return function(){live=false;clearTimeout(timer)};
+};
+/* сердечный ритм: тапай только по светящимся сердцам */
+G.a=function(box,w){
+  var h=document.createElement('div');h.className='hud';box.appendChild(h);
+  var b=document.createElement('button');b.style.cssText='width:230px;height:230px;border:0;border-radius:50%;background:radial-gradient(circle,#fff,#ffacd0);font-size:90px;box-shadow:0 0 35px #ff79b0;cursor:pointer;transition:transform .18s,filter .18s';box.appendChild(b);
+  var n=0,goal=12,active=false,live=true,timer=null,phase=0;
+  function hud(){h.textContent='💗 '+n+' / '+goal}
+  function pulse(){
+    if(!live)return;
+    active=true;b.textContent='💓';b.style.transform='scale(1.12)';b.style.filter='brightness(1.12)';
+    timer=setTimeout(function(){
+      active=false;b.textContent='🤍';b.style.transform='scale(.92)';b.style.filter='none';
+      timer=setTimeout(pulse,520+Math.random()*430);
+    },700);
+  }
+  b.textContent='🤍';hud();timer=setTimeout(pulse,450);
+  b.onclick=function(){
+    if(!live)return;
+    if(active){
+      n++;hud();active=false;clearTimeout(timer);
+      b.animate([{transform:'scale(1.22)'},{transform:'scale(.92)'}],220);
+      if(n>=goal){live=false;clearTimeout(timer);b.textContent='💖';conf(30);setTimeout(w,450);return}
+      timer=setTimeout(pulse,450);
+    }else{
+      n=Math.max(0,n-1);hud();
+      b.animate([{transform:'scale(.82)'},{transform:'scale(.96)'}],180);
+    }
+  };
+  return function(){live=false;clearTimeout(timer)};
+};
+/* котик: погладь его, когда он появляется */
+G.z=function(box,w){
+  var h=document.createElement('div');h.className='hud';box.appendChild(h);
+  var f=document.createElement('div');f.className='playfield';box.appendChild(f);
+  var cat=document.createElement('button');cat.className='orb';cat.textContent='🐈';cat.style.cssText='width:90px;height:90px;font-size:60px;left:40%;top:40%;opacity:0';f.appendChild(cat);
+  var n=0,goal=10,live=true,timer,hide;
+  h.textContent='🐾 0 / '+goal;
+  function appear(){if(!live)return;cat.style.left=(Math.random()*70+5)+'%';cat.style.top=(Math.random()*70+5)+'%';cat.style.opacity='1';cat.style.transform='scale(1)';hide=setTimeout(function(){cat.style.opacity='0';timer=setTimeout(appear,220)},650+Math.random()*400)}
+  cat.onclick=function(){if(!live||cat.style.opacity==='0')return;n++;h.textContent='🐾 '+n+' / '+goal;cat.style.opacity='0';clearTimeout(hide);if(n>=goal){live=false;w()}else timer=setTimeout(appear,250)};
+  appear();return function(){live=false;clearTimeout(timer);clearTimeout(hide)};
+};
+/* мозаика: собери картинку по клеткам */
+G.t=function(box,w){
+  var h=document.createElement('div');h.className='hud';h.textContent='Собери сердечко';box.appendChild(h);
+  var g=document.createElement('div');g.className='garden';box.appendChild(g);
+  var tiles=[1,2,3,4,5,6,7,8,0],moves=0,icons=['💗','🌸','🧸','🎀','🦋','🍓','✨','💖'];
+  function neighbors(i){var a=[];if(i>=3)a.push(i-3);if(i<6)a.push(i+3);if(i%3)a.push(i-1);if(i%3!==2)a.push(i+1);return a}
+  // Shuffle only with legal moves, so the puzzle is always solvable.
+  var blank=8,prev=-1;
+  for(var k=0;k<100;k++){var opts=neighbors(blank).filter(function(v){return v!==prev});var next=opts[Math.floor(Math.random()*opts.length)];tiles[blank]=tiles[next];tiles[next]=0;prev=blank;blank=next}
+  function render(){
+    g.innerHTML='';
+    tiles.forEach(function(v,i){
+      var b=document.createElement('button');b.textContent=v===0?'':icons[v-1];b.setAttribute('aria-label',v===0?'пустая клетка':'фишка '+v);
+      if(v===0){b.style.background='rgba(255,79,147,.12)';b.style.boxShadow='inset 0 0 0 2px rgba(255,79,147,.22)'}
+      else b.style.background='linear-gradient(145deg,rgba(255,255,255,.9),rgba(255,180,215,.75))';
+      b.onclick=function(){
+        var z=tiles.indexOf(0);if(neighbors(z).indexOf(i)<0)return;
+        tiles[z]=tiles[i];tiles[i]=0;moves++;h.textContent='Ходы: '+moves;render();
+        if(tiles.every(function(v,j){return v===j+1||j===8&&v===0})){h.textContent='💗 '+moves+' ходов';conf(24);setTimeout(w,350)}
+      };
+      g.appendChild(b);
+    });
+  }
+  render();return function(){};
+};
+
+
+/* Нарисуй путь: проведи пальцем по всем светящимся точкам */
+G.d=function(box,w){
+  var h=document.createElement('div');h.className='hud';h.textContent='Соедини все точки';box.appendChild(h);
+  var cv=document.createElement('canvas');cv.width=320;cv.height=320;cv.style.touchAction='none';box.appendChild(cv);
+  var x=cv.getContext('2d'),pts=[[55,55],[160,55],[265,55],[265,160],[160,160],[55,160],[55,265],[160,265],[265,265]],seen={},drawing=false,last=null;
+  function pos(e){var r=cv.getBoundingClientRect();return {x:(e.clientX-r.left)*320/r.width,y:(e.clientY-r.top)*320/r.height}}
+  function draw(){x.clearRect(0,0,320,320);x.lineWidth=7;x.lineCap='round';x.strokeStyle='#ff4f93';if(last){x.beginPath();x.moveTo(last.x,last.y);x.lineTo(last.x,last.y);x.stroke()}pts.forEach(function(p,i){x.beginPath();x.arc(p[0],p[1],seen[i]?13:9,0,7);x.fillStyle=seen[i]?'#ff4f93':'#ffc1dc';x.fill();x.strokeStyle='#fff';x.lineWidth=2;x.stroke()})}
+  cv.onpointerdown=function(e){drawing=true;cv.setPointerCapture(e.pointerId);var p=pos(e);last=p;hit(p);draw()};
+  cv.onpointermove=function(e){if(!drawing)return;var p=pos(e);x.beginPath();x.moveTo(last.x,last.y);x.lineTo(p.x,p.y);x.strokeStyle='#ff4f93';x.lineWidth=8;x.lineCap='round';x.stroke();last=p;hit(p)};
+  cv.onpointerup=cv.onpointercancel=function(){drawing=false;last=null};
+  function hit(p){pts.forEach(function(q,i){if(Math.hypot(p.x-q[0],p.y-q[1])<24)seen[i]=1});var n=Object.keys(seen).length;h.textContent='✨ '+n+' / 9';if(n===9){conf(25);w()}}
+  draw();return function(){drawing=false};
+};
+/* Луна-баланс: удерживай шарик в безопасной зоне */
+G.h=function(box,w){
+  var h=document.createElement('div');h.className='hud';box.appendChild(h);
+  var cv=document.createElement('canvas');cv.width=320;cv.height=320;cv.style.touchAction='none';box.appendChild(cv);
+  var x=cv.getContext('2d'),y=160,vy=0,held=false,score=0,last=performance.now(),live=true,raf;
+  function down(){held=true}function up(){held=false}
+  cv.addEventListener('pointerdown',down);cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+  function loop(t){if(!live)return;var dt=Math.min((t-last)/1000,.04);last=t;vy+=(held?-260:260)*dt;y+=vy*dt;score+=dt;
+    if(y<35||y>285){live=false;h.textContent='🌙 '+score.toFixed(1)+' сек';setTimeout(w,350);return}
+    x.clearRect(0,0,320,320);x.fillStyle='rgba(255,255,255,.35)';x.fillRect(0,0,320,320);x.strokeStyle='#ff8fbd';x.lineWidth=3;x.beginPath();x.moveTo(20,35);x.lineTo(300,35);x.moveTo(20,285);x.lineTo(300,285);x.stroke();x.font='42px serif';x.textAlign='center';x.fillText('🌙',160,y);
+    h.textContent='⏱ '+score.toFixed(1)+' / 15 сек';if(score>=15){live=false;w();return}raf=requestAnimationFrame(loop)}
+  raf=requestAnimationFrame(loop);return function(){live=false;cancelAnimationFrame(raf);cv.removeEventListener('pointerdown',down);cv.removeEventListener('pointerup',up);cv.removeEventListener('pointercancel',up)};
+};
+/* Лазерный коридор: проведи курсор между движущимися лучами */
+G.e=function(box,w){
+  var h=document.createElement('div');h.className='hud';h.textContent='Проведи шарик к выходу';box.appendChild(h);
+  var cv=document.createElement('canvas');cv.width=320;cv.height=320;cv.style.touchAction='none';box.appendChild(cv);
+  var x=cv.getContext('2d'),p={x:24,y:160},target={x:290,y:160},t=0,live=true,raf,last=performance.now(),started=false;
+  function pos(e){var r=cv.getBoundingClientRect();return {x:(e.clientX-r.left)*320/r.width,y:(e.clientY-r.top)*320/r.height}}
+  function move(e){if(!live)return;started=true;p=pos(e)}
+  cv.addEventListener('pointerdown',move);cv.addEventListener('pointermove',move);
+  function loop(now){if(!live)return;var dt=Math.min((now-last)/1000,.05);last=now;t+=dt;
+    x.clearRect(0,0,320,320);x.fillStyle='rgba(255,255,255,.5)';x.fillRect(0,0,320,320);
+    var bars=[];for(var i=0;i<4;i++){var yy=55+i*70+Math.sin(t*2+i)*25;bars.push({y:yy,gap:70+Math.sin(t*1.5+i)*35})}
+    bars.forEach(function(b){x.fillStyle='#ff4f93';x.fillRect(0,b.y-5,320,b.gap-15);x.fillRect(0,b.y+b.gap+15,320,320-b.y-b.gap-15)});
+    x.font='28px serif';x.textAlign='center';x.fillText('💎',target.x,target.y+10);x.beginPath();x.arc(p.x,p.y,11,0,7);x.fillStyle='#fff';x.fill();x.strokeStyle='#ff4f93';x.lineWidth=4;x.stroke();
+    var crash=bars.some(function(b){return Math.abs(p.y-b.y)<8||Math.abs(p.y-(b.y+b.gap))<8});
+    if(crash){live=false;h.textContent='💥';setTimeout(w,350);return}
+    if(p.x>280&&started){live=false;conf(25);w();return}
+    h.textContent='💎 '+Math.max(0,Math.floor(p.x/3))+'%';raf=requestAnimationFrame(loop)}
+  raf=requestAnimationFrame(loop);return function(){live=false;cancelAnimationFrame(raf);cv.removeEventListener('pointerdown',move);cv.removeEventListener('pointermove',move)};
+};
+/* Код из символов: найди правильную последовательность */
+G.u=function(box,w){
+  var h=document.createElement('div');h.className='hud';h.textContent='🔐';box.appendChild(h);
+  var msg=document.createElement('div');msg.style.cssText='font-size:15px;text-align:center';box.appendChild(msg);
+  var g=document.createElement('div');g.className='garden';box.appendChild(g);
+  var symbols=['🌙','⭐','💗','🦋'],secret=[0,1,2,3],input=[],buttons=[];
+  secret.sort(function(){return Math.random()-.5});
+  function render(){g.innerHTML='';symbols.forEach(function(s,i){var b=document.createElement('button');b.textContent=s;b.onclick=function(){if(input.indexOf(i)!==-1)return;input.push(i);msg.textContent=input.map(function(k){return symbols[k]}).join(' ');if(input.length===4){if(input.every(function(v,j){return v===secret[j]})){h.textContent='🔓';conf(25);w()}else{h.textContent='🔒';input=[];setTimeout(function(){msg.textContent='Попробуй другую комбинацию'},450)}}};g.appendChild(b)})}
+  msg.textContent='Выбери символы в правильном порядке';render();
+  // Подсказка встроена в игру: последовательность мерцает один раз.
+  var hint=document.createElement('div');hint.style.cssText='font-size:25px;letter-spacing:5px';hint.textContent=secret.map(function(i){return symbols[i]}).join(' ');box.insertBefore(hint,g);
   return function(){};
 };
 
